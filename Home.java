@@ -1,10 +1,13 @@
 
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -13,7 +16,7 @@ public class Home {
     public static void main(String[] args) {
 
         HashMap<String, String> dict_aminoacids = new HashMap<>();
-        ArrayList<String> traduccion = new ArrayList<>();
+        HashMap<String, String> traduccion = new HashMap<>();
         String dict_file_name = "";
         HashMap<String, String> dict_general = new HashMap<>();
         Boolean condicion = true;
@@ -22,7 +25,8 @@ public class Home {
         while (condicion) {
             switch (x) {
                 case 0:
-                    String doc_text = FileReader(text());
+                    String mensaje = "Por favor escriba la ruta completa del archivo Fasta:";
+                    String doc_text = FileReader(text(mensaje));
                     System.out.println(doc_text);
                     dict_general = loadDict(doc_text);
                     System.out.println("Se cargó correctamente el archivo FASTA, puede usar las demas ópciones.");
@@ -37,15 +41,21 @@ public class Home {
                     if (!dict_aminoacids.containsKey(x)) {
                         dict_aminoacids = dictOfTranslation();
                     }
-                    traduccion = new ArrayList<>();
-                    String seccuenciaTraducida = "";
+                    String texto_archivo = "";
+                    traduccion = new HashMap<>();
+                    String secuenciaTraducida = "";
                     String nombreSecuencia = "";
                     for (Map.Entry<String, String> entry : dict_general.entrySet()) {
-                        System.out.println(entry.getKey() + " = " + entry.getValue());
-                        seccuenciaTraducida = translateADN(entry.getValue(), dict_aminoacids);
-                        traduccion.add(nombreSecuencia+"->\n"+seccuenciaTraducida);
+                        nombreSecuencia = entry.getKey();
+                        secuenciaTraducida = entry.getValue();
+                        System.out.println(nombreSecuencia);
+                        System.out.println(secuenciaTraducida);
+                        secuenciaTraducida = translateADN(entry.getValue(), dict_aminoacids);
+                        traduccion.put(">" + nombreSecuencia + "\n", secuenciaTraducida);
+                        texto_archivo = texto_archivo + "\n" + nombreSecuencia + "\n" + secuenciaTraducida;
                     }
-                    
+                    String nombre_archivo = text("Introduzca el nombre que desea poner al archivo (sera .fa, no debe añadir el sufijo)");
+                    FileWriter(nombre_archivo, texto_archivo);
                     x = 5;
                     break;
                 case 3:
@@ -88,8 +98,8 @@ public class Home {
     }
 
     // REQ 1
-    public static String text() {
-        System.out.println("Por favor escriba la ruta completa del archivo Fasta:");
+    public static String text(String mensaje) {
+        System.out.println(mensaje);
         Scanner scanner = new Scanner(System.in);
         return scanner.nextLine();
     }
@@ -119,6 +129,32 @@ public class Home {
         return final_text;
     }
 
+    public static void FileWriter(String nombreArchivo, String texto) {
+        BufferedWriter writer;
+        writer = null;
+        try {
+            File dir = new File("FastaFiles");
+
+            // Crear el archivo en el directorio especificado
+            File archivo = new File(dir, nombreArchivo + ".fa");
+            writer = new BufferedWriter(new FileWriter(archivo));
+
+            // Escribir el texto en el archivo
+            writer.write(texto);
+            System.out.println("Archivo escrito exitosamente en: " + archivo.getAbsolutePath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                if (writer != null) {
+                    writer.close();
+                }
+            } catch (IOException ex) {
+                ex.printStackTrace();
+            }
+        }
+    }
+
     public static HashMap<String, String> loadDict(String texto_plano) {
 
         HashMap<String, String> Dict = new HashMap<>();
@@ -139,12 +175,31 @@ public class Home {
                 specimen = actual;
                 secuence = "";
             } else {
+                secuence = reemplazarN(secuence);
                 secuence = secuence + actual;
             }
         }
 
         return Dict;
 
+    }
+
+    public static String reemplazarN(String secuencia) {
+        Random random = new Random();
+        char[] opciones = {'T', 'G', 'A', 'C'};
+        StringBuilder resultado = new StringBuilder();
+
+        for (char c : secuencia.toCharArray()) {
+            if (c == 'N') {
+                // Reemplazar 'N' por un carácter aleatorio de las opciones
+                char reemplazo = opciones[random.nextInt(opciones.length)];
+                resultado.append(reemplazo);
+            } else {
+                resultado.append(c);
+            }
+        }
+
+        return resultado.toString();
     }
 
     //REQ 2
@@ -257,34 +312,30 @@ public class Home {
         Character third = ' ';
         String trio = "";
 
-        String aminoacids_secuence = "";
+        String aminoacids_secuence = " ";
         String aminoacid = "";
+        Boolean escritura_habilitada = false;
 
-        System.out.println(secuence);
-
-        for (int i = 0; i < secuence.length() + 3; i += 3) {
+        for (int i = 0; i < secuence.length() - 3; i += 3) {
 
             first = secuence.charAt(i);
             second = secuence.charAt(i + 1);
             third = secuence.charAt(i + 2);
 
             trio = "" + first + second + third;
-            System.out.println(trio);
+            //System.out.println(trio);
             aminoacid = dict.get(trio);
-            switch (aminoacid) {
-                case "M" -> {
-                    aminoacids_secuence = "";
-                    aminoacids_secuence += aminoacid;
-                }
-                case "STOP" -> {
-                    return aminoacids_secuence;
-                }
-                default ->
-                    aminoacids_secuence += aminoacid;
+            if (aminoacid.equals("M")) {
+                aminoacids_secuence += aminoacid;
+                escritura_habilitada = true;
+            } else if (aminoacid.equals("STOP")) {
+                escritura_habilitada = false;
+            } else if (escritura_habilitada) {
+                aminoacids_secuence += aminoacid;
             }
 
         }
-        return " ";
+        return aminoacids_secuence;
     }
 
 }
