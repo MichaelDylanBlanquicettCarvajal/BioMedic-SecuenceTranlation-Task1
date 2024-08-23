@@ -5,6 +5,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
 
 public class Req0_Upload_Data {
 
@@ -74,7 +75,7 @@ public class Req0_Upload_Data {
         return final_text;
     }
 
-    public String[] obtenerLista() {
+    public String[] obtainList() {
         String sCarpAct = System.getProperty("user.dir", "/txt files");
         File carpeta = new File(sCarpAct);
         String[] lista = carpeta.list();
@@ -85,15 +86,33 @@ public class Req0_Upload_Data {
             return null;
         }
     }
+    
+    public HashMap<String, String> loadDict(String texto_plano) {
 
-    public String fastaString(String texto_plano) {
+        HashMap<String, String> Dict = new HashMap<>();
+;
+        String[] texto_array = texto_plano.split("\n");
 
-        texto_plano = texto_plano.replace(" ", "");
-        texto_plano = texto_plano.replace("\n", "");
-        String[] sp1 = texto_plano.split("mRNA");
-        String[] sp2 = sp1[0].split("PREDICTED");
+        String specimen = "";
+        String secuence = "";
+        for (int linea = 0; linea < texto_array.length; linea++) {
+        
+            String actual = texto_array[linea];
+            if (linea > 0){
+                Dict.put(specimen, secuence);
+                specimen = actual;
+            }
+            else if (texto_array[linea].charAt(0) == '>'){
+                specimen = actual;
+            }
+            else {
+                secuence += linea;
+            }
+        }
 
-        return sp2[0] + "\n" + sp1[1] + "\n";
+        return Dict;
 
     }
 }
+
+mview -in blast -out fasta blastp.txt > outputnamedoc.fa
