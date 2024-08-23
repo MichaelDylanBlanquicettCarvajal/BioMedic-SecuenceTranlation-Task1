@@ -2,6 +2,7 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -11,61 +12,98 @@ public class Home {
 
     public static void main(String[] args) {
 
+        HashMap<String, String> dict_aminoacids = new HashMap<>();
+        ArrayList<String> traduccion = new ArrayList<>();
         String dict_file_name = "";
-        HashMap<String, String> dict = new HashMap<>();
+        HashMap<String, String> dict_general = new HashMap<>();
         Boolean condicion = true;
-        Integer x = 4;
+        Integer x = 5;
         Scanner scanner = new Scanner(System.in);
         while (condicion) {
             switch (x) {
                 case 0:
-                    dict_file_name = scanner.nextLine();
-                    String doc_text = FileReader(dict_file_name);
-                    dict = loadDict(doc_text);
+                    String doc_text = FileReader(text());
+                    System.out.println(doc_text);
+                    dict_general = loadDict(doc_text);
                     System.out.println("Se cargó correctamente el archivo FASTA, puede usar las demas ópciones.");
-                    x = 4;
+                    x = 5;
                     break;
                 case 1:
-                    x = 4;
+                    dict_general = remove_duplicates(dict_general);
+                    System.out.println("Secuencias duplicadas eliminadas del diccionario.");
+                    x = 5;
                     break;
                 case 2:
-                    x = 4;
+                    if (!dict_aminoacids.containsKey(x)) {
+                        dict_aminoacids = dictOfTranslation();
+                    }
+                    traduccion = new ArrayList<>();
+                    String seccuenciaTraducida = "";
+                    String nombreSecuencia = "";
+                    for (Map.Entry<String, String> entry : dict_general.entrySet()) {
+                        System.out.println(entry.getKey() + " = " + entry.getValue());
+                        seccuenciaTraducida = translateADN(entry.getValue(), dict_aminoacids);
+                        traduccion.add(nombreSecuencia+"->\n"+seccuenciaTraducida);
+                    }
+                    
+                    x = 5;
                     break;
                 case 3:
-                    x = 4;
-                    condicion = false;
+                    for (int idx = 0; idx < traduccion.size(); idx++) {
+                        System.out.println(traduccion.get(idx) + "\n");
+                    }
+                    x = 5;
                     break;
                 case 4:
-                System.out.println("\n\n\n");
+                    x = 5;
+                    condicion = false;
+                    break;
+                case 5:
+                    System.out.println("\n\n\n");
                     System.out.println("NOTA: Para Ejecutar cualquiera de las opciones debe primero hacer la creación de los archivos FASTA en la\ncarpeta 'FastaFiles' y usar los archivos ahí presentes");
                     System.out.println("================================================================================================");
                     System.out.println("0) Cargar el archivo FASTA en diccionario.");
                     System.out.println("1) Eliminar las secuencias repetidas.");
                     System.out.println("2) Realizar la traducción a proteinas de una cadena de nucleotidos.");
-                    System.out.println("3) Cerrar el programa.");
+                    System.out.println("3) Imprimir resultado del punto 2 (traduccion de proteinas).");
+                    System.out.println("4) Cerrar el programa.");
                     System.out.println("================================================================================================");
                     System.out.println("Eliga una opción:");
                     x = scanner.nextInt();
                     break;
+                case 6:
+                    System.out.println(dict_general);
+                    for (Map.Entry<String, String> entry : dict_general.entrySet()) {
+                        System.out.println(entry.getKey() + " = " + entry.getValue());
+                    }
+
+                    x = 5;
+                    break;
                 default:
                     System.out.println("Opción no valida, intente nuevamente.");
                     break;
-            }    
+            }
         }
         scanner.close();
     }
 
     // REQ 1
+    public static String text() {
+        System.out.println("Por favor escriba la ruta completa del archivo Fasta:");
+        Scanner scanner = new Scanner(System.in);
+        return scanner.nextLine();
+    }
+
     public static String FileReader(String texto) {
         BufferedReader objReader = null;
         String final_text = "";
         try {
             String strCurrentLine;
 
-            objReader = new BufferedReader(new FileReader("FastaFiles/" + texto));
+            objReader = new BufferedReader(new FileReader(texto));
 
             while ((strCurrentLine = objReader.readLine()) != null) {
-                final_text += strCurrentLine;
+                final_text += strCurrentLine + "\n";
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -84,21 +122,24 @@ public class Home {
     public static HashMap<String, String> loadDict(String texto_plano) {
 
         HashMap<String, String> Dict = new HashMap<>();
-        ;
         String[] texto_array = texto_plano.split("\n");
 
         String specimen = "";
         String secuence = "";
+        Boolean cond = true;
         for (int linea = 0; linea < texto_array.length; linea++) {
 
             String actual = texto_array[linea];
-            if (linea > 0) {
-                Dict.put(specimen, secuence);
+            //System.out.println(actual);
+            if (actual.charAt(0) == '>') {
+                cond = !cond;
+                if (cond) {
+                    Dict.put(specimen, secuence);
+                }
                 specimen = actual;
-            } else if (texto_array[linea].charAt(0) == '>') {
-                specimen = actual;
+                secuence = "";
             } else {
-                secuence += linea;
+                secuence = secuence + actual;
             }
         }
 
@@ -219,6 +260,8 @@ public class Home {
         String aminoacids_secuence = "";
         String aminoacid = "";
 
+        System.out.println(secuence);
+
         for (int i = 0; i < secuence.length() + 3; i += 3) {
 
             first = secuence.charAt(i);
@@ -226,7 +269,7 @@ public class Home {
             third = secuence.charAt(i + 2);
 
             trio = "" + first + second + third;
-
+            System.out.println(trio);
             aminoacid = dict.get(trio);
             switch (aminoacid) {
                 case "M" -> {
